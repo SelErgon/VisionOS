@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard de Actuadores</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-image: url('fondo2.gif');
+            background-size: cover;  
+            background-position: center;
+            background-repeat: no-repeat;
+            font-family: "Times New Roman", Times, serif; 
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+    <button id="btnBuzzerOn">Encender Buzzer</button>
+    <button id="btnBuzzerOff">Apagar Buzzer</button>
+</div>
+
+<script>
+let bombilla = { r: 255, g: 255, b: 255, brillo: 255 };
+let vibrador = { estado: 0 };
+let buzzer = { estado: 0 };
+
+function setup() {
+    createCanvas(1520, 728);
+    textAlign(CENTER);
+    textFont('Times New Roman');  
+    setInterval(fetchStatus, 1000); // Actualiza cada segundo
+}
+
+function drawBombilla(x, y) {
+    fill(bombilla.r, bombilla.g, bombilla.b);
+    ellipse(x, y - 40, 150, 180);  
+    fill(120);
+    rectMode(CENTER);
+    rect(x, y + 70, 60, 90);  
+    stroke(80);
+    strokeWeight(3); 
+    line(x - 30, y + 40, x + 30, y + 40);
+    line(x - 30, y + 70, x + 30, y + 70);
+    line(x - 30, y + 100, x + 30, y + 100);
+    noStroke();
+}
+
+function drawVibrador(x, y) {
+    push();
+    translate(x, y);
+    fill(vibrador.estado ? color(0, 200, 0) : color(80));
+    triangle(-100, 100, 100, 100, 0, -100);
+    if (vibrador.estado) {
+        stroke(0, 255, 0);
+        strokeWeight(5); 
+        for (let i = -3; i <= 3; i++) {
+            line(-110, 100 + i * 20, 110, 100 + i * 20);
+        }
+    }
+    pop();
+}
+
+function drawBuzzer(x, y) {
+    push();
+    translate(x, y);
+    fill(buzzer.estado ? color(200, 0, 0) : color(80));
+    beginShape();
+    vertex(-80, -80);
+    vertex(-80, 80);
+    vertex(0, 50);
+    vertex(0, -50);
+    endShape(CLOSE);
+    ellipse(20, 0, 30, 60);  
+    ellipse(40, 0, 40, 80);  
+    pop();
+}
+
+function draw() {
+    fill(230,100,20);
+    textSize(48);
+    text('Dashboard Secundario', width / 2, 60);
+    let yCenter = height / 2 - 20;  
+    let spacing = width / 4;
+
+    drawBombilla(spacing, yCenter);
+    fill(212, 176, 13 );
+    textSize(24);
+    text('Bombilla', spacing, yCenter + 180);  
+
+    drawBuzzer(2 * spacing, yCenter);
+    fill(255);
+    text('Buzzer', 2 * spacing, yCenter + 180); 
+
+    drawVibrador(3 * spacing, yCenter);
+    fill(54, 191, 58 );
+    text('Vibrador', 3 * spacing, yCenter + 180);  
+}
+
+function fetchStatus() {
+    fetch('http://localhost:5000/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.bombilla) bombilla = data.bombilla;
+            if (data.vibrador) vibrador = data.vibrador;
+            if (data.buzzer) buzzer = data.buzzer;
+        })
+        .catch(err => console.error('Error al obtener el estado:', err));
+}
+
+// Interacción con el teclado
+function keyPressed() {
+    if (key === 'B') {
+        fetch('http://localhost:5000/set_buzzer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado: 1 })
+        });
+    } else if (key === 'N') {
+        fetch('http://localhost:5000/set_buzzer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado: 0 })
+        });
+    }
+}
+
+// Interacción con los botones
+document.getElementById('btnBuzzerOn').addEventListener('click', () => {
+    fetch('http://localhost:5000/set_buzzer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 1 })
+    });
+});
+
+document.getElementById('btnBuzzerOff').addEventListener('click', () => {
+    fetch('http://localhost:5000/set_buzzer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 0 })
+    });
+});
+</script>
+</body>
+</html>
